@@ -27,6 +27,14 @@ public class Tile {
 		return isMine;
 	}
 	
+	public int getX() {
+		return x;
+	}
+	
+	public int getY() {
+		return y;
+	}
+	
 	public void reveal() {
 		isRevealed = true;
 	}
