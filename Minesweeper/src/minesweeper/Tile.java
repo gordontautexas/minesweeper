@@ -6,6 +6,7 @@ public class Tile {
 	private int adjMines;
 	private boolean isMine;
 	private boolean isRevealed;
+	private boolean isFlagged;
 	
 	public Tile(int x, int y) {
 		this.x = x;
@@ -13,6 +14,7 @@ public class Tile {
 		adjMines = 0;
 		isMine = true;
 		isRevealed = false;
+		isFlagged = false;
 	}
 	
 	public void setAdjMines(int numMines) {
@@ -35,7 +37,15 @@ public class Tile {
 		return y;
 	}
 	
+	public boolean isFlagged() {
+		return isFlagged;
+	}
+	
 	public void reveal() {
 		isRevealed = true;
+	}
+	
+	public void flag() {
+		isFlagged = true;
 	}
 }

@@ -3,11 +3,13 @@ package minesweeper;
 import java.util.*;
 
 import javafx.application.Application;
+import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.input.MouseButton;
@@ -19,19 +21,22 @@ import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 
 public class Main extends Application{
 	static int cols = 30;
 	static int rows = 16;
 	static int count;
+	static Tile[][] board;
 	public static void main(String[] args) {
 		HashSet<Tile> tiles = new HashSet<Tile>();
 		int mines = 99;
 		//int cols = 30;
 		//int rows = 16;
-		Tile[][] board = new Tile[cols][rows];
+		board = new Tile[cols][rows];
 		for(int i = 0; i < cols; i++) {
 			for(int j = 0; j < rows; j++) {
 				Tile space = new Tile(i,j);
@@ -51,21 +56,21 @@ public class Main extends Application{
 			else {
 			}
 		}
-//		System.out.println("------------------------------");
-//		for(int i = 0; i < rows; i++) {
-//			System.out.print("|");
-//			for(int j = 0; j < cols; j++) {
-//				if(board[j][i].getMine() == true) {
-//					System.out.print("m");
-//				}
-//				else {
-//					System.out.print("o");
-//				}
-//				System.out.print("|");
-//			}
-//			System.out.println();
-//			System.out.println("------------------------------");
-//		}
+		System.out.println("------------------------------");
+		for(int i = 0; i < rows; i++) {
+			System.out.print("|");
+			for(int j = 0; j < cols; j++) {
+				if(board[j][i].getMine() == true) {
+					System.out.print("m");
+				}
+				else {
+					System.out.print("o");
+				}
+				System.out.print("|");
+			}
+			System.out.println();
+			System.out.println("------------------------------");
+		}
 		launch(args);
 	}
 
@@ -107,22 +112,54 @@ public class Main extends Application{
 					@Override
 					public void handle(MouseEvent event) {
 						ObservableMap<Object, Object> o = tilePane.getProperties();
+						int col = (Integer) o.get("gridpane-column");
+						int row = (Integer) o.get("gridpane-row");
 						if(event.getButton().equals(MouseButton.PRIMARY)) {
-							Polygon polygon3 = new Polygon();
-	     					//polygon3.getPoints().addAll(new Double[]{ 4.2,5.1,7.1,9.1}); 
-	     					polygon3.setFill(Color.AQUA);
-	     					polygon3.setStroke(Color.YELLOW);
-							tilePane.getChildren().add(polygon3);
+							if(board[col][row].getMine() == true) {
+								Polygon poly = new Polygon();
+		     					poly.getPoints().addAll(new Double[]{ 
+		     					         tileWidth*2/12.0, tileHeight*2/12.0, 
+		     					         tileWidth*1/2.0, tileHeight*1/2.0, 
+		     					         tileWidth*10/12.0, tileHeight*2/12.0,
+		     					         tileWidth*1/2.0, tileHeight*1/2.0,
+		     					         tileWidth*10/12.0, tileHeight*10/12.0,
+		     					         tileWidth*1/2.0, tileHeight*1/2.0,
+		     					         tileWidth*2/12.0, tileHeight*10/12.0,
+		     					         tileWidth*1/2.0, tileHeight*1/2.0,
+		     					         tileWidth*1/20.0, tileHeight*1/2.0,
+		     					         tileWidth*19/20.0,tileHeight*1/2.0,
+		     					         tileWidth*1/2.0, tileHeight*1/2.0,
+		     					         tileWidth*1/2.0, tileHeight*1/30.0,
+		     					         tileWidth*1/2.0, tileHeight*29/30.0,
+		     					         tileWidth*1/2.0, tileHeight*1/2.0}); 
+		     					poly.setFill(Color.BLACK);
+		     					poly.setStroke(Color.BLACK);
+		     					Shape sh = new Circle(tileHeight*0.4);
+		     					sh.setFill(Color.BLACK);
+		     					sh.setStroke(Color.BLACK);
+		     					tilePane.getChildren().add(poly);
+		     					tilePane.getChildren().add(sh);
+							}
+							else {
+
+							}
 						}
 						else {
-							Polygon polygon3 = new Polygon();
-	     					//polygon3.getPoints().addAll(new Double[]{ 4.2,5.1,7.1,9.1}); 
-	     					polygon3.setFill(Color.AQUA);
-	     					polygon3.setStroke(Color.YELLOW);
-							tilePane.getChildren().add(polygon3);
+							Polygon poly = new Polygon();
+	     					poly.getPoints().addAll(new Double[]{ 
+	     					         tileWidth*1/12.0, tileHeight*1/4.0, 
+	     					         tileWidth*1/2.0, tileHeight*1/12.0, 
+	     					         tileWidth*1/2.0, tileHeight*5/12.0,
+	     					         tileWidth*1/2.0, tileHeight*8/12.0,
+	     					         tileWidth*11/12.0, tileHeight*11/12.0,
+	     					         tileWidth*1/12.0, tileHeight*11/12.0,
+	     					         tileWidth*1/2.0, tileHeight*8/12.0,
+	     					         tileWidth*1/2.0, tileHeight*5/12.0,
+	     					         tileWidth*1/12.0, tileHeight*1/4.0}); 
+	     					poly.setFill(Color.RED);
+	     					poly.setStroke(Color.RED);
+	     					tilePane.getChildren().add(poly);
 						}
-						int i1 = (Integer) o.get("gridpane-column");
-						int i2 = (Integer) o.get("gridpane-row");
 					}
 				});
 				grid.add(tilePane, c, r);
