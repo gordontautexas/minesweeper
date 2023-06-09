@@ -37,15 +37,28 @@ public class Tile {
 		return y;
 	}
 	
+	public boolean isRevealed() {
+		return isRevealed;
+	}
+	
 	public boolean isFlagged() {
 		return isFlagged;
+	}
+	
+	public int getAdjMines() {
+		return adjMines;
 	}
 	
 	public void reveal() {
 		isRevealed = true;
 	}
 	
-	public void flag() {
-		isFlagged = true;
+	public void toggleFlag() {
+		if(isFlagged) {
+			isFlagged = false;
+		}
+		else {
+			isFlagged = true;
+		}
 	}
 }

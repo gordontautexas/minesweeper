@@ -6,6 +6,7 @@ import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -24,6 +25,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Shape;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 public class Main extends Application{
@@ -53,7 +55,22 @@ public class Main extends Application{
 				t.deMine();
 				initialMines--;
 			}
-			else {
+		}
+		for(int c = 0; c < cols; c++) {
+			for(int r = 0; r < rows; r++) {
+				if(!board[c][r].getMine()) {
+					int numAdj = 0;
+					for(int currCol = c-1; currCol <= c+1 && currCol < cols; currCol++) {
+						for(int currRow = r-1; currRow <= r+1 && currRow < rows; currRow++) {
+							if(currCol >= 0 && currRow >= 0) {
+								if(board[currCol][currRow].getMine() == true) {
+									numAdj++;
+								}
+							}
+						}
+					}
+					board[c][r].setAdjMines(numAdj);
+				}
 			}
 		}
 		System.out.println("------------------------------");
@@ -64,7 +81,7 @@ public class Main extends Application{
 					System.out.print("m");
 				}
 				else {
-					System.out.print("o");
+					System.out.print(board[j][i].getAdjMines());
 				}
 				System.out.print("|");
 			}
@@ -108,61 +125,139 @@ public class Main extends Application{
 						tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1 1 1 0;");
 					}
 				}
+				grid.add(tilePane, c, r);
 				tilePane.setOnMouseClicked(new EventHandler<MouseEvent>() {
 					@Override
 					public void handle(MouseEvent event) {
+						ArrayList<Tile> changedTiles = new ArrayList<Tile>();
 						ObservableMap<Object, Object> o = tilePane.getProperties();
 						int col = (Integer) o.get("gridpane-column");
 						int row = (Integer) o.get("gridpane-row");
+						// left click to reveal number or mine
 						if(event.getButton().equals(MouseButton.PRIMARY)) {
-							if(board[col][row].getMine() == true) {
-								Polygon poly = new Polygon();
-		     					poly.getPoints().addAll(new Double[]{ 
-		     					         tileWidth*2/12.0, tileHeight*2/12.0, 
-		     					         tileWidth*1/2.0, tileHeight*1/2.0, 
-		     					         tileWidth*10/12.0, tileHeight*2/12.0,
-		     					         tileWidth*1/2.0, tileHeight*1/2.0,
-		     					         tileWidth*10/12.0, tileHeight*10/12.0,
-		     					         tileWidth*1/2.0, tileHeight*1/2.0,
-		     					         tileWidth*2/12.0, tileHeight*10/12.0,
-		     					         tileWidth*1/2.0, tileHeight*1/2.0,
-		     					         tileWidth*1/20.0, tileHeight*1/2.0,
-		     					         tileWidth*19/20.0,tileHeight*1/2.0,
-		     					         tileWidth*1/2.0, tileHeight*1/2.0,
-		     					         tileWidth*1/2.0, tileHeight*1/30.0,
-		     					         tileWidth*1/2.0, tileHeight*29/30.0,
-		     					         tileWidth*1/2.0, tileHeight*1/2.0}); 
-		     					poly.setFill(Color.BLACK);
-		     					poly.setStroke(Color.BLACK);
-		     					Shape sh = new Circle(tileHeight*0.4);
-		     					sh.setFill(Color.BLACK);
-		     					sh.setStroke(Color.BLACK);
-		     					tilePane.getChildren().add(poly);
-		     					tilePane.getChildren().add(sh);
-							}
-							else {
-
+							if (!board[col][row].isFlagged()) {
+								if (board[col][row].getMine() == true) {
+									changedTiles.add(board[col][row]);
+								}
+								else {
+									changedTiles.add(board[col][row]);
+								} 
+								board[col][row].reveal();
 							}
 						}
+						// right click to flag/unflag
 						else {
-							Polygon poly = new Polygon();
-	     					poly.getPoints().addAll(new Double[]{ 
-	     					         tileWidth*1/12.0, tileHeight*1/4.0, 
-	     					         tileWidth*1/2.0, tileHeight*1/12.0, 
-	     					         tileWidth*1/2.0, tileHeight*5/12.0,
-	     					         tileWidth*1/2.0, tileHeight*8/12.0,
-	     					         tileWidth*11/12.0, tileHeight*11/12.0,
-	     					         tileWidth*1/12.0, tileHeight*11/12.0,
-	     					         tileWidth*1/2.0, tileHeight*8/12.0,
-	     					         tileWidth*1/2.0, tileHeight*5/12.0,
-	     					         tileWidth*1/12.0, tileHeight*1/4.0}); 
-	     					poly.setFill(Color.RED);
-	     					poly.setStroke(Color.RED);
-	     					tilePane.getChildren().add(poly);
+							if(board[col][row].isRevealed()) {
+							}
+							else {
+								board[col][row].toggleFlag();
+								changedTiles.add(board[col][row]);
+							}
+						}
+						for(int i = 0; i < changedTiles.size(); i++) {
+							Tile currTile = changedTiles.get(i);
+							int x = currTile.getX();
+							int y = currTile.getY();
+							StackPane sp = (StackPane) grid.getChildren().get(y*cols + x);
+							grid.getChildren().remove(y*cols + x);
+							if(currTile.getMine() == true && currTile.isRevealed() == true) {
+								Polygon poly = new Polygon();
+								poly.getPoints()
+										.addAll(new Double[] { tileWidth * 2 / 12.0, tileHeight * 2 / 12.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 10 / 12.0,
+												tileHeight * 2 / 12.0, tileWidth * 1 / 2.0, tileHeight * 1 / 2.0,
+												tileWidth * 10 / 12.0, tileHeight * 10 / 12.0, tileWidth * 1 / 2.0,
+												tileHeight * 1 / 2.0, tileWidth * 2 / 12.0, tileHeight * 10 / 12.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 20.0,
+												tileHeight * 1 / 2.0, tileWidth * 19 / 20.0, tileHeight * 1 / 2.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 2.0,
+												tileHeight * 1 / 30.0, tileWidth * 1 / 2.0, tileHeight * 29 / 30.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0 });
+								poly.setFill(Color.BLACK);
+								poly.setStroke(Color.BLACK);
+								Shape sh = new Circle(tileHeight * 0.4);
+								sh.setFill(Color.BLACK);
+								sh.setStroke(Color.BLACK);
+								sp.getChildren().add(poly);
+								sp.getChildren().add(sh);
+							}
+							else if(currTile.isFlagged() && !currTile.isRevealed()) {
+								Polygon poly = new Polygon();
+								poly.getPoints().addAll(new Double[]{ 
+										tileWidth*1/12.0, tileHeight*1/4.0, 
+										tileWidth*1/2.0, tileHeight*1/12.0, 
+										tileWidth*1/2.0, tileHeight*5/12.0,
+										tileWidth*1/2.0, tileHeight*8/12.0,
+										tileWidth*11/12.0, tileHeight*11/12.0,
+										tileWidth*1/12.0, tileHeight*11/12.0,
+										tileWidth*1/2.0, tileHeight*8/12.0,
+										tileWidth*1/2.0, tileHeight*5/12.0,
+										tileWidth*1/12.0, tileHeight*1/4.0}); 
+								poly.setFill(Color.RED);
+								poly.setStroke(Color.RED);
+								sp.getChildren().add(poly);
+							}
+							else if(!currTile.isFlagged() && !currTile.isRevealed()) {
+								sp.getChildren().clear();
+							}
+							else {
+								int adjMines = board[x][y].getAdjMines();
+								Text number = new Text();
+								switch (adjMines) {
+								case 1:
+									number.setText("1");
+									number.setFill(Color.BLUE);
+									break;
+								case 2:
+									number.setText("2");
+									number.setFill(Color.LIMEGREEN);
+									break;
+								case 3:
+									number.setText("3");
+									number.setFill(Color.RED);
+									break;
+								case 4:
+									number.setText("4");
+									number.setFill(Color.PURPLE);
+									break;
+								case 5:
+									number.setText("5");
+									number.setFill(Color.ORANGERED);
+									break;
+								case 6:
+									number.setText("6");
+									number.setFill(Color.TEAL);
+									break;
+								case 7:
+									number.setText("7");
+									number.setFill(Color.BROWN);
+									break;
+								case 8:
+									number.setText("8");
+									number.setFill(Color.BLACK);
+									break;
+								default:
+									number.setText("0");
+									break;
+								}
+								sp.getChildren().add(number);
+							}
+							sp.setStyle("-fx-background-color: #000000, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 0;");
+							if (x == 0 && y == 0) {
+								sp.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1;");
+							} else {
+								if (x == 0) {
+									sp.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 1;");
+								}
+								if (y == 0) {
+									sp.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1 1 1 0;");
+								}
+							}
+							grid.add(sp, x, y);
+							changedTiles.clear();
 						}
 					}
 				});
-				grid.add(tilePane, c, r);
 			}
 		}
 		vb.getChildren().add(grid);
