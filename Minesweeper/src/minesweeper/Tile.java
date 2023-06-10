@@ -1,6 +1,6 @@
 package minesweeper;
 
-public class Tile {
+public class Tile implements Comparable{
 	private int x;
 	private int y;
 	private int adjMines;
@@ -59,6 +59,20 @@ public class Tile {
 		}
 		else {
 			isFlagged = true;
+		}
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		Tile otherTile = (Tile) o;
+		if(this.x + this.y > otherTile.x + otherTile.y) {
+			return 1;
+		}
+		else if(this.x + this.y < otherTile.x + otherTile.y) {
+			return -1;
+		}
+		else {
+			return 0;
 		}
 	}
 }

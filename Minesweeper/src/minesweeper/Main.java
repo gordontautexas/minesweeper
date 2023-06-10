@@ -129,7 +129,7 @@ public class Main extends Application{
 				tilePane.setOnMouseClicked(new EventHandler<MouseEvent>() {
 					@Override
 					public void handle(MouseEvent event) {
-						ArrayList<Tile> changedTiles = new ArrayList<Tile>();
+						PriorityQueue<Tile> changedTiles = new PriorityQueue<Tile>();
 						ObservableMap<Object, Object> o = tilePane.getProperties();
 						int col = (Integer) o.get("gridpane-column");
 						int row = (Integer) o.get("gridpane-row");
@@ -154,12 +154,11 @@ public class Main extends Application{
 								changedTiles.add(board[col][row]);
 							}
 						}
-						for(int i = 0; i < changedTiles.size(); i++) {
-							Tile currTile = changedTiles.get(i);
+						while(!changedTiles.isEmpty()) {
+							Tile currTile = changedTiles.remove();
 							int x = currTile.getX();
 							int y = currTile.getY();
-							StackPane sp = (StackPane) grid.getChildren().get(y*cols + x);
-							grid.getChildren().remove(y*cols + x);
+							StackPane sp = (StackPane) grid.getChildren().get(x*rows + y);
 							if(currTile.getMine() == true && currTile.isRevealed() == true) {
 								Polygon poly = new Polygon();
 								poly.getPoints()
@@ -238,23 +237,20 @@ public class Main extends Application{
 									break;
 								default:
 									number.setText("0");
+									for(int currCol = x-1; currCol <= x+1 && currCol < cols; currCol++) {
+										for(int currRow = y-1; currRow <= y+1 && currRow < rows; currRow++) {
+											if(currCol >= 0 && currRow >= 0) {
+												if(!board[currCol][currRow].isRevealed() && !board[currCol][currRow].isFlagged()) {
+													changedTiles.add(board[currCol][currRow]);
+													board[currCol][currRow].reveal();
+												}
+											}
+										}
+									}
 									break;
 								}
 								sp.getChildren().add(number);
 							}
-							sp.setStyle("-fx-background-color: #000000, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 0;");
-							if (x == 0 && y == 0) {
-								sp.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1;");
-							} else {
-								if (x == 0) {
-									sp.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 1;");
-								}
-								if (y == 0) {
-									sp.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1 1 1 0;");
-								}
-							}
-							grid.add(sp, x, y);
-							changedTiles.clear();
 						}
 					}
 				});
