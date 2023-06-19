@@ -13,8 +13,13 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
@@ -24,6 +29,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -33,11 +39,32 @@ public class Main extends Application{
 	static int rows = 16;
 	static int count;
 	static Tile[][] board;
+	static boolean lost;
+	static Tile losingTile;
 	public static void main(String[] args) {
+		resetBoard();
+		System.out.println("------------------------------");
+		for(int i = 0; i < rows; i++) {
+			System.out.print("|");
+			for(int j = 0; j < cols; j++) {
+				if(board[j][i].getMine() == true) {
+					System.out.print("m");
+				}
+				else {
+					System.out.print(board[j][i].getAdjMines());
+				}
+				System.out.print("|");
+			}
+			System.out.println();
+			System.out.println("------------------------------");
+		}
+		losingTile = null;
+		launch(args);
+	}
+
+	public static void resetBoard() {
 		HashSet<Tile> tiles = new HashSet<Tile>();
 		int mines = 99;
-		//int cols = 30;
-		//int rows = 16;
 		board = new Tile[cols][rows];
 		for(int i = 0; i < cols; i++) {
 			for(int j = 0; j < rows; j++) {
@@ -73,31 +100,15 @@ public class Main extends Application{
 				}
 			}
 		}
-		System.out.println("------------------------------");
-		for(int i = 0; i < rows; i++) {
-			System.out.print("|");
-			for(int j = 0; j < cols; j++) {
-				if(board[j][i].getMine() == true) {
-					System.out.print("m");
-				}
-				else {
-					System.out.print(board[j][i].getAdjMines());
-				}
-				System.out.print("|");
-			}
-			System.out.println();
-			System.out.println("------------------------------");
-		}
-		launch(args);
 	}
-
+	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox vb = new VBox();
 		vb.setAlignment(Pos.CENTER);
 		vb.setPadding(new Insets(0, 0, 0, 50));
 		vb.setSpacing(25);
-		vb.getChildren().add(new Button());
+		Button resetButton = new Button();
 		GridPane grid = new GridPane();
 		int tileHeight = 750/rows;
 		int tileWidth = 1500/cols;
@@ -148,6 +159,28 @@ public class Main extends Application{
 						// right click to flag/unflag
 						else {
 							if(board[col][row].isRevealed()) {
+								int numFlags = 0;
+								for(int currCol = col-1; currCol <= col+1 && currCol < cols ; currCol++) {
+									for(int currRow = row-1; currRow <= row+1 && currRow < rows; currRow++) {
+										if(currCol >= 0 && currRow >= 0) {
+											if(board[currCol][currRow].isFlagged()) {
+												numFlags++;
+											}
+										}
+									}
+								}
+								if(numFlags == board[col][row].getAdjMines()) {
+									for(int currCol = col-1; currCol <= col+1 && currCol < cols ; currCol++) {
+										for(int currRow = row-1; currRow <= row+1 && currRow < rows; currRow++) {
+											if(currCol >= 0 && currRow >= 0) {
+												if(!board[currCol][currRow].isFlagged() && !board[currCol][currRow].isRevealed()) {
+													changedTiles.add(board[currCol][currRow]);
+													board[currCol][currRow].reveal();
+												}
+											}
+										}
+									}
+								}
 							}
 							else {
 								board[col][row].toggleFlag();
@@ -177,8 +210,15 @@ public class Main extends Application{
 								Shape sh = new Circle(tileHeight * 0.4);
 								sh.setFill(Color.BLACK);
 								sh.setStroke(Color.BLACK);
+								Shape background = new Rectangle(tileWidth, tileHeight);
+								background.setFill(Color.RED);
+								background.setStroke(Color.RED);
+								sp.getChildren().add(background);
 								sp.getChildren().add(poly);
 								sp.getChildren().add(sh);
+								grid.setMouseTransparent(true);
+								lost = true;
+								losingTile = currTile;
 							}
 							else if(currTile.isFlagged() && !currTile.isRevealed()) {
 								Polygon poly = new Polygon();
@@ -252,10 +292,55 @@ public class Main extends Application{
 								sp.getChildren().add(number);
 							}
 						}
+						if(lost) {
+							for(int c = 0; c < cols; c++) {
+								for(int r = 0; r < rows; r++) {
+									if(board[c][r].getMine() && board[c][r] != losingTile) {
+										StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
+										Polygon poly = new Polygon();
+										poly.getPoints()
+												.addAll(new Double[] { tileWidth * 2 / 12.0, tileHeight * 2 / 12.0,
+														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 10 / 12.0,
+														tileHeight * 2 / 12.0, tileWidth * 1 / 2.0, tileHeight * 1 / 2.0,
+														tileWidth * 10 / 12.0, tileHeight * 10 / 12.0, tileWidth * 1 / 2.0,
+														tileHeight * 1 / 2.0, tileWidth * 2 / 12.0, tileHeight * 10 / 12.0,
+														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 20.0,
+														tileHeight * 1 / 2.0, tileWidth * 19 / 20.0, tileHeight * 1 / 2.0,
+														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 2.0,
+														tileHeight * 1 / 30.0, tileWidth * 1 / 2.0, tileHeight * 29 / 30.0,
+														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0 });
+										poly.setFill(Color.BLACK);
+										poly.setStroke(Color.BLACK);
+										Shape sh = new Circle(tileHeight * 0.4);
+										sh.setFill(Color.BLACK);
+										sh.setStroke(Color.BLACK);
+										sp.getChildren().add(poly);
+										sp.getChildren().add(sh);
+									}
+								}
+							}
+						}
 					}
 				});
 			}
 		}
+		resetButton.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				resetBoard();
+				grid.setMouseTransparent(false);
+				lost = false;
+				losingTile = null;
+				for(int c = 0; c < cols; c++) {
+					for(int r = 0; r < rows; r++) {
+						StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
+						sp.getChildren().clear();
+					}
+				}
+			}
+			
+		});
+		vb.getChildren().add(resetButton);
 		vb.getChildren().add(grid);
 		Scene scene = new Scene(vb, 1600, 800);
 		primaryStage.setScene(scene);
