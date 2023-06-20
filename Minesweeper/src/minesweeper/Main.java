@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
@@ -37,7 +38,8 @@ import javafx.stage.Stage;
 public class Main extends Application{
 	static int cols = 30;
 	static int rows = 16;
-	static int count;
+	static int tilesToWin;
+	static int openedTiles;
 	static Tile[][] board;
 	static boolean lost;
 	static Tile losingTile;
@@ -64,7 +66,8 @@ public class Main extends Application{
 
 	public static void resetBoard() {
 		HashSet<Tile> tiles = new HashSet<Tile>();
-		int mines = 99;
+		int mines = 9;
+		tilesToWin = cols*rows - mines;
 		board = new Tile[cols][rows];
 		for(int i = 0; i < cols; i++) {
 			for(int j = 0; j < rows; j++) {
@@ -106,9 +109,9 @@ public class Main extends Application{
 	public void start(Stage primaryStage) throws Exception {
 		VBox vb = new VBox();
 		vb.setAlignment(Pos.CENTER);
-		vb.setPadding(new Insets(0, 0, 0, 50));
+		vb.setPadding(new Insets(0, 0, 0, 160));
 		vb.setSpacing(25);
-		Button resetButton = new Button();
+		StackPane resetPane = new StackPane();
 		GridPane grid = new GridPane();
 		int tileHeight = 750/rows;
 		int tileWidth = 1500/cols;
@@ -122,6 +125,36 @@ public class Main extends Application{
 			row.setVgrow(Priority.SOMETIMES);
 			grid.getRowConstraints().add(row);
 		}
+		
+		Image resetImg = new Image(getClass().getResourceAsStream("Spheal.png"));
+		ImageView resetView = new ImageView();
+		resetView.setImage(resetImg);
+		resetPane.getChildren().add(resetView);
+		resetPane.setOnMousePressed(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				Image pressedImg = new Image(getClass().getResourceAsStream("Spheal2.png"));
+				resetView.setImage(pressedImg);
+			}
+			
+		});
+		resetPane.setOnMouseReleased(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				resetBoard();
+				grid.setMouseTransparent(false);
+				lost = false;
+				losingTile = null;
+				for(int c = 0; c < cols; c++) {
+					for(int r = 0; r < rows; r++) {
+						StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
+						sp.getChildren().clear();
+					}
+				}
+				resetView.setImage(resetImg);
+			}
+		});
+		vb.getChildren().add(resetPane);
 		for(int c = 0; c < cols; c++) {
 			for(int r = 0; r < rows; r++) {
 				StackPane tilePane = new StackPane();
@@ -240,6 +273,10 @@ public class Main extends Application{
 								sp.getChildren().clear();
 							}
 							else {
+								Shape rect = new Rectangle(tileWidth, tileHeight);
+								rect.setFill(Color.LIGHTGRAY);
+								rect.setStroke(Color.GRAY);
+								sp.getChildren().add(rect);
 								int adjMines = board[x][y].getAdjMines();
 								Text number = new Text();
 								switch (adjMines) {
@@ -290,7 +327,13 @@ public class Main extends Application{
 									break;
 								}
 								sp.getChildren().add(number);
+								openedTiles++;
 							}
+						}
+						if(openedTiles == tilesToWin) {
+							System.out.println("won");
+							openedTiles = 0;
+							grid.setMouseTransparent(true);
 						}
 						if(lost) {
 							for(int c = 0; c < cols; c++) {
@@ -324,23 +367,7 @@ public class Main extends Application{
 				});
 			}
 		}
-		resetButton.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				resetBoard();
-				grid.setMouseTransparent(false);
-				lost = false;
-				losingTile = null;
-				for(int c = 0; c < cols; c++) {
-					for(int r = 0; r < rows; r++) {
-						StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
-						sp.getChildren().clear();
-					}
-				}
-			}
-			
-		});
-		vb.getChildren().add(resetButton);
+
 		vb.getChildren().add(grid);
 		Scene scene = new Scene(vb, 1600, 800);
 		primaryStage.setScene(scene);
