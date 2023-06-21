@@ -2,6 +2,8 @@ package minesweeper;
 
 import java.util.*;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
@@ -23,6 +25,7 @@ import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
@@ -34,14 +37,17 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class Main extends Application{
 	static int cols = 30;
 	static int rows = 16;
+	static int mines = 9;
 	static int tilesToWin;
 	static int openedTiles;
 	static Tile[][] board;
 	static boolean lost;
+	static boolean clockOn;
 	static Tile losingTile;
 	public static void main(String[] args) {
 		resetBoard();
@@ -66,7 +72,6 @@ public class Main extends Application{
 
 	public static void resetBoard() {
 		HashSet<Tile> tiles = new HashSet<Tile>();
-		int mines = 9;
 		tilesToWin = cols*rows - mines;
 		board = new Tile[cols][rows];
 		for(int i = 0; i < cols; i++) {
@@ -111,6 +116,10 @@ public class Main extends Application{
 		vb.setAlignment(Pos.CENTER);
 		vb.setPadding(new Insets(0, 0, 0, 160));
 		vb.setSpacing(25);
+		HBox hb = new HBox();
+		hb.setPadding(new Insets(0, 0, 0, 160));
+		hb.setSpacing(600);
+		hb.getStylesheets().add("minesweeper/TopVisuals.css");
 		StackPane resetPane = new StackPane();
 		GridPane grid = new GridPane();
 		int tileHeight = 750/rows;
@@ -125,7 +134,12 @@ public class Main extends Application{
 			row.setVgrow(Priority.SOMETIMES);
 			grid.getRowConstraints().add(row);
 		}
-		
+		StackPane minePane = new StackPane();
+		minePane.getStyleClass().add("numMines");
+		Text mineCount = new Text();
+		mineCount.setText("" + mines);
+		minePane.getChildren().add(mineCount);
+		hb.getChildren().add(minePane);
 		Image resetImg = new Image(getClass().getResourceAsStream("Spheal.png"));
 		ImageView resetView = new ImageView();
 		resetView.setImage(resetImg);
@@ -154,7 +168,22 @@ public class Main extends Application{
 				resetView.setImage(resetImg);
 			}
 		});
-		vb.getChildren().add(resetPane);
+		hb.getChildren().add(resetPane);
+		StackPane clockPane = new StackPane();
+		clockPane.getStyleClass().add("clock");
+		Text clock = new Text();
+		clock.setText("0");
+		Time tim = new Time();
+		Timeline tl = new Timeline(
+				new KeyFrame(Duration.seconds(1), 
+						e -> {
+							tim.secPassed();
+							clock.setText("" + tim.getTime());
+						}));
+		tl.setCycleCount(Timeline.INDEFINITE);
+		clockPane.getChildren().add(clock);
+		hb.getChildren().add(clockPane);
+		vb.getChildren().add(hb);
 		for(int c = 0; c < cols; c++) {
 			for(int r = 0; r < rows; r++) {
 				StackPane tilePane = new StackPane();
@@ -173,6 +202,9 @@ public class Main extends Application{
 				tilePane.setOnMouseClicked(new EventHandler<MouseEvent>() {
 					@Override
 					public void handle(MouseEvent event) {
+						if(!clockOn) {
+							tl.play();
+						}
 						PriorityQueue<Tile> changedTiles = new PriorityQueue<Tile>();
 						ObservableMap<Object, Object> o = tilePane.getProperties();
 						int col = (Integer) o.get("gridpane-column");
@@ -216,6 +248,13 @@ public class Main extends Application{
 								}
 							}
 							else {
+								if(!board[col][row].isFlagged()) {
+									mines--;
+								}
+								else {
+									mines++;
+								}
+								mineCount.setText("" + mines);
 								board[col][row].toggleFlag();
 								changedTiles.add(board[col][row]);
 							}
@@ -362,6 +401,8 @@ public class Main extends Application{
 									}
 								}
 							}
+							Image lostImage = new Image(getClass().getResourceAsStream("Spheal3.png"));
+							resetView.setImage(lostImage);
 						}
 					}
 				});
