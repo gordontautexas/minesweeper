@@ -15,6 +15,11 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
@@ -35,6 +40,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -42,31 +48,18 @@ import javafx.util.Duration;
 public class Main extends Application{
 	static int cols = 30;
 	static int rows = 16;
-	static int mines = 9;
+	static int mines = 99;
 	static int tilesToWin;
 	static int openedTiles;
+	static int mineDisplay;
 	static Tile[][] board;
 	static boolean lost;
 	static boolean clockOn;
+	static boolean firstClick;
 	static Tile losingTile;
 	public static void main(String[] args) {
 		resetBoard();
-		System.out.println("------------------------------");
-		for(int i = 0; i < rows; i++) {
-			System.out.print("|");
-			for(int j = 0; j < cols; j++) {
-				if(board[j][i].getMine() == true) {
-					System.out.print("m");
-				}
-				else {
-					System.out.print(board[j][i].getAdjMines());
-				}
-				System.out.print("|");
-			}
-			System.out.println();
-			System.out.println("------------------------------");
-		}
-		losingTile = null;
+		firstClick = true;
 		launch(args);
 	}
 
@@ -108,6 +101,23 @@ public class Main extends Application{
 				}
 			}
 		}
+		losingTile = null;
+		mineDisplay = mines;
+		System.out.println("------------------------------");
+		for(int i = 0; i < rows; i++) {
+			System.out.print("|");
+			for(int j = 0; j < cols; j++) {
+				if(board[j][i].getMine() == true) {
+					System.out.print("m");
+				}
+				else {
+					System.out.print(board[j][i].getAdjMines());
+				}
+				System.out.print("|");
+			}
+			System.out.println();
+			System.out.println("------------------------------");
+		}
 	}
 	
 	@Override
@@ -116,12 +126,71 @@ public class Main extends Application{
 		vb.setAlignment(Pos.CENTER);
 		vb.setPadding(new Insets(0, 0, 0, 160));
 		vb.setSpacing(25);
+		HBox controlBox = new HBox();
+		controlBox.setSpacing(50);
+		Text difficulty = new Text("Game");
+		Text controls = new Text("Controls");
+		Text musicMenu = new Text("Music");
+		GridPane diffPane = new GridPane();
+		diffPane.setHgap(50);
+		diffPane.add(new Text(), 0, 0);
+		diffPane.add(new Text("Height"), 1, 0);
+		diffPane.add(new Text("Width"), 2, 0);
+		diffPane.add(new Text("Mines"), 3, 0);
+		ToggleGroup group = new ToggleGroup();
+	    RadioButton begButton = new RadioButton("Beginner");
+	    begButton.setToggleGroup(group);
+	    begButton.setSelected(true);
+	    RadioButton intButton = new RadioButton("Intermediate");
+	    intButton.setToggleGroup(group);
+	    RadioButton expButton = new RadioButton("Expert");
+	    expButton.setToggleGroup(group);
+		Text beg1 = new Text("9");
+		Text beg2 = new Text("9");
+		Text beg3 = new Text("10");
+		diffPane.add(begButton, 0, 1);
+		diffPane.add(beg1, 1, 1);
+		diffPane.add(beg2, 2, 1);
+		diffPane.add(beg3, 3, 1);
+		Text int1 = new Text("16");
+		Text int2 = new Text("16");
+		Text int3 = new Text("40");
+		diffPane.add(intButton, 0, 2);
+		diffPane.add(int1, 1, 2);
+		diffPane.add(int2, 2, 2);
+		diffPane.add(int3, 3, 2);
+		Text exp1 = new Text("16");
+		Text exp2 = new Text("30");
+		Text exp3 = new Text("99");
+		diffPane.add(expButton, 0, 3);
+		diffPane.add(exp1, 1, 3);
+		diffPane.add(exp2, 2, 3);
+		diffPane.add(exp3, 3, 3);
+		Button newButton = new Button("New Game");
+		diffPane.add(newButton, 0, 4);
+		newButton.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+					group.getSelectedToggle();
+			}
+		});
+		difficulty.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			public void handle(MouseEvent event) {
+				Stage diffStage = new Stage();
+				Scene diffScene = new Scene(diffPane, 500, 500);
+				diffStage.setScene(diffScene);
+				diffStage.show();
+			}
+		});
+		controlBox.getChildren().addAll(difficulty, controls, musicMenu);
+		vb.getChildren().add(controlBox);
 		HBox hb = new HBox();
 		hb.setPadding(new Insets(0, 0, 0, 160));
 		hb.setSpacing(600);
 		hb.getStylesheets().add("minesweeper/TopVisuals.css");
 		StackPane resetPane = new StackPane();
 		GridPane grid = new GridPane();
+		grid.getStylesheets().add("minesweeper/Tile.css");
 		int tileHeight = 750/rows;
 		int tileWidth = 1500/cols;
 		for(int i = 0; i < cols; i++) {
@@ -144,6 +213,8 @@ public class Main extends Application{
 		ImageView resetView = new ImageView();
 		resetView.setImage(resetImg);
 		resetPane.getChildren().add(resetView);
+		Text clock = new Text();
+		clock.setText("0");
 		resetPane.setOnMousePressed(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent event) {
@@ -157,8 +228,12 @@ public class Main extends Application{
 			public void handle(MouseEvent event) {
 				resetBoard();
 				grid.setMouseTransparent(false);
+				firstClick = true;
 				lost = false;
 				losingTile = null;
+				mineDisplay = mines;
+				mineCount.setText("" + mineDisplay);
+				clock.setText("0");
 				for(int c = 0; c < cols; c++) {
 					for(int r = 0; r < rows; r++) {
 						StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
@@ -171,8 +246,6 @@ public class Main extends Application{
 		hb.getChildren().add(resetPane);
 		StackPane clockPane = new StackPane();
 		clockPane.getStyleClass().add("clock");
-		Text clock = new Text();
-		clock.setText("0");
 		Time tim = new Time();
 		Timeline tl = new Timeline(
 				new KeyFrame(Duration.seconds(1), 
@@ -211,13 +284,20 @@ public class Main extends Application{
 						int row = (Integer) o.get("gridpane-row");
 						// left click to reveal number or mine
 						if(event.getButton().equals(MouseButton.PRIMARY)) {
-							if (!board[col][row].isFlagged()) {
-								if (board[col][row].getMine() == true) {
-									changedTiles.add(board[col][row]);
+							if(firstClick) {
+								if(board[col][row].getAdjMines() != 0 || board[col][row].getMine() == true) {
+									boolean isZero = false;
+									while(!isZero) {
+										resetBoard();
+										if(board[col][row].getAdjMines() == 0 && board[col][row].getMine() == false) {
+											isZero = true;
+										}
+									}
 								}
-								else {
-									changedTiles.add(board[col][row]);
-								} 
+							}
+							firstClick = false;
+							if (!board[col][row].isFlagged()) {
+								changedTiles.add(board[col][row]);
 								board[col][row].reveal();
 							}
 						}
@@ -249,12 +329,12 @@ public class Main extends Application{
 							}
 							else {
 								if(!board[col][row].isFlagged()) {
-									mines--;
+									mineDisplay--;
 								}
 								else {
-									mines++;
+									mineDisplay++;
 								}
-								mineCount.setText("" + mines);
+								mineCount.setText("" + mineDisplay);
 								board[col][row].toggleFlag();
 								changedTiles.add(board[col][row]);
 							}
@@ -377,7 +457,8 @@ public class Main extends Application{
 						if(lost) {
 							for(int c = 0; c < cols; c++) {
 								for(int r = 0; r < rows; r++) {
-									if(board[c][r].getMine() && board[c][r] != losingTile) {
+									if((board[c][r].getMine() && board[c][r] != losingTile) &&
+										!board[c][r].isFlagged()) {
 										StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
 										Polygon poly = new Polygon();
 										poly.getPoints()
@@ -403,6 +484,8 @@ public class Main extends Application{
 							}
 							Image lostImage = new Image(getClass().getResourceAsStream("Spheal3.png"));
 							resetView.setImage(lostImage);
+							tl.stop();
+							tim.resetTime();
 						}
 					}
 				});

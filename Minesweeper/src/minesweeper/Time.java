@@ -11,4 +11,7 @@ public class Time {
 	public void secPassed() {
 		time++;
 	}
+	public void resetTime() {
+		time = 0;
+	}
 }

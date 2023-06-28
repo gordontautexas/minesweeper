@@ -9,3 +9,7 @@
 .clock {
 	-fx-background-color: lemonchiffon;
 }
+
+.tile {
+	-fx-background-color: purple;
+}
