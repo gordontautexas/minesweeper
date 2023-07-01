@@ -19,6 +19,7 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -120,6 +121,239 @@ public class Main extends Application{
 		}
 	}
 	
+	public static void createPane(GridPane grid, int c, int r, Timeline tl, Text mineCount, int tileWidth, int tileHeight, ImageView resetView, Time tim) {
+		StackPane tilePane = new StackPane();
+		tilePane.setStyle("-fx-background-color: #000000, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 0;");
+		if (c == 0 && r == 0) {
+			tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1;");
+		} else {
+			if (c == 0) {
+				tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 1;");
+			}
+			if (r == 0) {
+				tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1 1 1 0;");
+			}
+		}
+		grid.add(tilePane, c, r);
+		tilePane.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				if(!clockOn) {
+					tl.play();
+				}
+				PriorityQueue<Tile> changedTiles = new PriorityQueue<Tile>();
+				ObservableMap<Object, Object> o = tilePane.getProperties();
+				int col = (Integer) o.get("gridpane-column");
+				int row = (Integer) o.get("gridpane-row");
+				// left click to reveal number or mine
+				if(event.getButton().equals(MouseButton.PRIMARY)) {
+					if(firstClick) {
+						if(board[col][row].getAdjMines() != 0 || board[col][row].getMine() == true) {
+							boolean isZero = false;
+							while(!isZero) {
+								resetBoard();
+								if(board[col][row].getAdjMines() == 0 && board[col][row].getMine() == false) {
+									isZero = true;
+								}
+							}
+						}
+					}
+					firstClick = false;
+					if (!board[col][row].isFlagged()) {
+						changedTiles.add(board[col][row]);
+						board[col][row].reveal();
+					}
+				}
+				// right click to flag/unflag
+				else {
+					if(board[col][row].isRevealed()) {
+						int numFlags = 0;
+						for(int currCol = col-1; currCol <= col+1 && currCol < cols ; currCol++) {
+							for(int currRow = row-1; currRow <= row+1 && currRow < rows; currRow++) {
+								if(currCol >= 0 && currRow >= 0) {
+									if(board[currCol][currRow].isFlagged()) {
+										numFlags++;
+									}
+								}
+							}
+						}
+						if(numFlags == board[col][row].getAdjMines()) {
+							for(int currCol = col-1; currCol <= col+1 && currCol < cols ; currCol++) {
+								for(int currRow = row-1; currRow <= row+1 && currRow < rows; currRow++) {
+									if(currCol >= 0 && currRow >= 0) {
+										if(!board[currCol][currRow].isFlagged() && !board[currCol][currRow].isRevealed()) {
+											changedTiles.add(board[currCol][currRow]);
+											board[currCol][currRow].reveal();
+										}
+									}
+								}
+							}
+						}
+					}
+					else {
+						if(!board[col][row].isFlagged()) {
+							mineDisplay--;
+						}
+						else {
+							mineDisplay++;
+						}
+						mineCount.setText("" + mineDisplay);
+						board[col][row].toggleFlag();
+						changedTiles.add(board[col][row]);
+					}
+				}
+				while(!changedTiles.isEmpty()) {
+					Tile currTile = changedTiles.remove();
+					int x = currTile.getX();
+					int y = currTile.getY();
+					StackPane sp = (StackPane) grid.getChildren().get(x*rows + y);
+					if(currTile.getMine() == true && currTile.isRevealed() == true) {
+						Polygon poly = new Polygon();
+						poly.getPoints()
+								.addAll(new Double[] { tileWidth * 2 / 12.0, tileHeight * 2 / 12.0,
+										tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 10 / 12.0,
+										tileHeight * 2 / 12.0, tileWidth * 1 / 2.0, tileHeight * 1 / 2.0,
+										tileWidth * 10 / 12.0, tileHeight * 10 / 12.0, tileWidth * 1 / 2.0,
+										tileHeight * 1 / 2.0, tileWidth * 2 / 12.0, tileHeight * 10 / 12.0,
+										tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 20.0,
+										tileHeight * 1 / 2.0, tileWidth * 19 / 20.0, tileHeight * 1 / 2.0,
+										tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 2.0,
+										tileHeight * 1 / 30.0, tileWidth * 1 / 2.0, tileHeight * 29 / 30.0,
+										tileWidth * 1 / 2.0, tileHeight * 1 / 2.0 });
+						poly.setFill(Color.BLACK);
+						poly.setStroke(Color.BLACK);
+						Shape sh = new Circle(tileHeight * 0.4);
+						sh.setFill(Color.BLACK);
+						sh.setStroke(Color.BLACK);
+						Shape background = new Rectangle(tileWidth, tileHeight);
+						background.setFill(Color.RED);
+						background.setStroke(Color.RED);
+						sp.getChildren().add(background);
+						sp.getChildren().add(poly);
+						sp.getChildren().add(sh);
+						grid.setMouseTransparent(true);
+						lost = true;
+						losingTile = currTile;
+					}
+					else if(currTile.isFlagged() && !currTile.isRevealed()) {
+						Polygon poly = new Polygon();
+						poly.getPoints().addAll(new Double[]{ 
+								tileWidth*1/12.0, tileHeight*1/4.0, 
+								tileWidth*1/2.0, tileHeight*1/12.0, 
+								tileWidth*1/2.0, tileHeight*5/12.0,
+								tileWidth*1/2.0, tileHeight*8/12.0,
+								tileWidth*11/12.0, tileHeight*11/12.0,
+								tileWidth*1/12.0, tileHeight*11/12.0,
+								tileWidth*1/2.0, tileHeight*8/12.0,
+								tileWidth*1/2.0, tileHeight*5/12.0,
+								tileWidth*1/12.0, tileHeight*1/4.0}); 
+						poly.setFill(Color.RED);
+						poly.setStroke(Color.RED);
+						sp.getChildren().add(poly);
+					}
+					else if(!currTile.isFlagged() && !currTile.isRevealed()) {
+						sp.getChildren().clear();
+					}
+					else {
+						Shape rect = new Rectangle(tileWidth, tileHeight);
+						rect.setFill(Color.LIGHTGRAY);
+						rect.setStroke(Color.GRAY);
+						sp.getChildren().add(rect);
+						int adjMines = board[x][y].getAdjMines();
+						Text number = new Text();
+						switch (adjMines) {
+						case 1:
+							number.setText("1");
+							number.setFill(Color.BLUE);
+							break;
+						case 2:
+							number.setText("2");
+							number.setFill(Color.LIMEGREEN);
+							break;
+						case 3:
+							number.setText("3");
+							number.setFill(Color.RED);
+							break;
+						case 4:
+							number.setText("4");
+							number.setFill(Color.PURPLE);
+							break;
+						case 5:
+							number.setText("5");
+							number.setFill(Color.ORANGERED);
+							break;
+						case 6:
+							number.setText("6");
+							number.setFill(Color.TEAL);
+							break;
+						case 7:
+							number.setText("7");
+							number.setFill(Color.BROWN);
+							break;
+						case 8:
+							number.setText("8");
+							number.setFill(Color.BLACK);
+							break;
+						default:
+							number.setText("0");
+							for(int currCol = x-1; currCol <= x+1 && currCol < cols; currCol++) {
+								for(int currRow = y-1; currRow <= y+1 && currRow < rows; currRow++) {
+									if(currCol >= 0 && currRow >= 0) {
+										if(!board[currCol][currRow].isRevealed() && !board[currCol][currRow].isFlagged()) {
+											changedTiles.add(board[currCol][currRow]);
+											board[currCol][currRow].reveal();
+										}
+									}
+								}
+							}
+							break;
+						}
+						sp.getChildren().add(number);
+						openedTiles++;
+					}
+				}
+				if(openedTiles == tilesToWin) {
+					System.out.println("won");
+					openedTiles = 0;
+					grid.setMouseTransparent(true);
+				}
+				if(lost) {
+					for(int c = 0; c < cols; c++) {
+						for(int r = 0; r < rows; r++) {
+							if((board[c][r].getMine() && board[c][r] != losingTile) &&
+								!board[c][r].isFlagged()) {
+								StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
+								Polygon poly = new Polygon();
+								poly.getPoints()
+										.addAll(new Double[] { tileWidth * 2 / 12.0, tileHeight * 2 / 12.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 10 / 12.0,
+												tileHeight * 2 / 12.0, tileWidth * 1 / 2.0, tileHeight * 1 / 2.0,
+												tileWidth * 10 / 12.0, tileHeight * 10 / 12.0, tileWidth * 1 / 2.0,
+												tileHeight * 1 / 2.0, tileWidth * 2 / 12.0, tileHeight * 10 / 12.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 20.0,
+												tileHeight * 1 / 2.0, tileWidth * 19 / 20.0, tileHeight * 1 / 2.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 2.0,
+												tileHeight * 1 / 30.0, tileWidth * 1 / 2.0, tileHeight * 29 / 30.0,
+												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0 });
+								poly.setFill(Color.BLACK);
+								poly.setStroke(Color.BLACK);
+								Shape sh = new Circle(tileHeight * 0.4);
+								sh.setFill(Color.BLACK);
+								sh.setStroke(Color.BLACK);
+								sp.getChildren().add(poly);
+								sp.getChildren().add(sh);
+							}
+						}
+					}
+					Image lostImage = new Image(getClass().getResourceAsStream("Spheal3.png"));
+					resetView.setImage(lostImage);
+					tl.stop();
+					tim.resetTime();
+				}
+			}
+		});
+	}
+	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox vb = new VBox();
@@ -168,16 +402,12 @@ public class Main extends Application{
 		diffPane.add(exp3, 3, 3);
 		Button newButton = new Button("New Game");
 		diffPane.add(newButton, 0, 4);
-		newButton.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-					group.getSelectedToggle();
-			}
-		});
 		difficulty.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
 				Stage diffStage = new Stage();
-				Scene diffScene = new Scene(diffPane, 500, 500);
+				HBox gridBox = new HBox();
+				gridBox.getChildren().add(diffPane);
+				Scene diffScene = new Scene(gridBox, 500, 500);
 				diffStage.setScene(diffScene);
 				diffStage.show();
 			}
@@ -259,239 +489,42 @@ public class Main extends Application{
 		vb.getChildren().add(hb);
 		for(int c = 0; c < cols; c++) {
 			for(int r = 0; r < rows; r++) {
-				StackPane tilePane = new StackPane();
-				tilePane.setStyle("-fx-background-color: #000000, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 0;");
-				if (c == 0 && r == 0) {
-					tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1;");
-				} else {
-					if (c == 0) {
-						tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 0 1 1 1;");
-					}
-					if (r == 0) {
-						tilePane.setStyle("-fx-background-color: black, "+ "#FFFFFF" +"; -fx-background-insets: 0, 1 1 1 0;");
-					}
-				}
-				grid.add(tilePane, c, r);
-				tilePane.setOnMouseClicked(new EventHandler<MouseEvent>() {
-					@Override
-					public void handle(MouseEvent event) {
-						if(!clockOn) {
-							tl.play();
-						}
-						PriorityQueue<Tile> changedTiles = new PriorityQueue<Tile>();
-						ObservableMap<Object, Object> o = tilePane.getProperties();
-						int col = (Integer) o.get("gridpane-column");
-						int row = (Integer) o.get("gridpane-row");
-						// left click to reveal number or mine
-						if(event.getButton().equals(MouseButton.PRIMARY)) {
-							if(firstClick) {
-								if(board[col][row].getAdjMines() != 0 || board[col][row].getMine() == true) {
-									boolean isZero = false;
-									while(!isZero) {
-										resetBoard();
-										if(board[col][row].getAdjMines() == 0 && board[col][row].getMine() == false) {
-											isZero = true;
-										}
-									}
-								}
-							}
-							firstClick = false;
-							if (!board[col][row].isFlagged()) {
-								changedTiles.add(board[col][row]);
-								board[col][row].reveal();
-							}
-						}
-						// right click to flag/unflag
-						else {
-							if(board[col][row].isRevealed()) {
-								int numFlags = 0;
-								for(int currCol = col-1; currCol <= col+1 && currCol < cols ; currCol++) {
-									for(int currRow = row-1; currRow <= row+1 && currRow < rows; currRow++) {
-										if(currCol >= 0 && currRow >= 0) {
-											if(board[currCol][currRow].isFlagged()) {
-												numFlags++;
-											}
-										}
-									}
-								}
-								if(numFlags == board[col][row].getAdjMines()) {
-									for(int currCol = col-1; currCol <= col+1 && currCol < cols ; currCol++) {
-										for(int currRow = row-1; currRow <= row+1 && currRow < rows; currRow++) {
-											if(currCol >= 0 && currRow >= 0) {
-												if(!board[currCol][currRow].isFlagged() && !board[currCol][currRow].isRevealed()) {
-													changedTiles.add(board[currCol][currRow]);
-													board[currCol][currRow].reveal();
-												}
-											}
-										}
-									}
-								}
-							}
-							else {
-								if(!board[col][row].isFlagged()) {
-									mineDisplay--;
-								}
-								else {
-									mineDisplay++;
-								}
-								mineCount.setText("" + mineDisplay);
-								board[col][row].toggleFlag();
-								changedTiles.add(board[col][row]);
-							}
-						}
-						while(!changedTiles.isEmpty()) {
-							Tile currTile = changedTiles.remove();
-							int x = currTile.getX();
-							int y = currTile.getY();
-							StackPane sp = (StackPane) grid.getChildren().get(x*rows + y);
-							if(currTile.getMine() == true && currTile.isRevealed() == true) {
-								Polygon poly = new Polygon();
-								poly.getPoints()
-										.addAll(new Double[] { tileWidth * 2 / 12.0, tileHeight * 2 / 12.0,
-												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 10 / 12.0,
-												tileHeight * 2 / 12.0, tileWidth * 1 / 2.0, tileHeight * 1 / 2.0,
-												tileWidth * 10 / 12.0, tileHeight * 10 / 12.0, tileWidth * 1 / 2.0,
-												tileHeight * 1 / 2.0, tileWidth * 2 / 12.0, tileHeight * 10 / 12.0,
-												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 20.0,
-												tileHeight * 1 / 2.0, tileWidth * 19 / 20.0, tileHeight * 1 / 2.0,
-												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 2.0,
-												tileHeight * 1 / 30.0, tileWidth * 1 / 2.0, tileHeight * 29 / 30.0,
-												tileWidth * 1 / 2.0, tileHeight * 1 / 2.0 });
-								poly.setFill(Color.BLACK);
-								poly.setStroke(Color.BLACK);
-								Shape sh = new Circle(tileHeight * 0.4);
-								sh.setFill(Color.BLACK);
-								sh.setStroke(Color.BLACK);
-								Shape background = new Rectangle(tileWidth, tileHeight);
-								background.setFill(Color.RED);
-								background.setStroke(Color.RED);
-								sp.getChildren().add(background);
-								sp.getChildren().add(poly);
-								sp.getChildren().add(sh);
-								grid.setMouseTransparent(true);
-								lost = true;
-								losingTile = currTile;
-							}
-							else if(currTile.isFlagged() && !currTile.isRevealed()) {
-								Polygon poly = new Polygon();
-								poly.getPoints().addAll(new Double[]{ 
-										tileWidth*1/12.0, tileHeight*1/4.0, 
-										tileWidth*1/2.0, tileHeight*1/12.0, 
-										tileWidth*1/2.0, tileHeight*5/12.0,
-										tileWidth*1/2.0, tileHeight*8/12.0,
-										tileWidth*11/12.0, tileHeight*11/12.0,
-										tileWidth*1/12.0, tileHeight*11/12.0,
-										tileWidth*1/2.0, tileHeight*8/12.0,
-										tileWidth*1/2.0, tileHeight*5/12.0,
-										tileWidth*1/12.0, tileHeight*1/4.0}); 
-								poly.setFill(Color.RED);
-								poly.setStroke(Color.RED);
-								sp.getChildren().add(poly);
-							}
-							else if(!currTile.isFlagged() && !currTile.isRevealed()) {
-								sp.getChildren().clear();
-							}
-							else {
-								Shape rect = new Rectangle(tileWidth, tileHeight);
-								rect.setFill(Color.LIGHTGRAY);
-								rect.setStroke(Color.GRAY);
-								sp.getChildren().add(rect);
-								int adjMines = board[x][y].getAdjMines();
-								Text number = new Text();
-								switch (adjMines) {
-								case 1:
-									number.setText("1");
-									number.setFill(Color.BLUE);
-									break;
-								case 2:
-									number.setText("2");
-									number.setFill(Color.LIMEGREEN);
-									break;
-								case 3:
-									number.setText("3");
-									number.setFill(Color.RED);
-									break;
-								case 4:
-									number.setText("4");
-									number.setFill(Color.PURPLE);
-									break;
-								case 5:
-									number.setText("5");
-									number.setFill(Color.ORANGERED);
-									break;
-								case 6:
-									number.setText("6");
-									number.setFill(Color.TEAL);
-									break;
-								case 7:
-									number.setText("7");
-									number.setFill(Color.BROWN);
-									break;
-								case 8:
-									number.setText("8");
-									number.setFill(Color.BLACK);
-									break;
-								default:
-									number.setText("0");
-									for(int currCol = x-1; currCol <= x+1 && currCol < cols; currCol++) {
-										for(int currRow = y-1; currRow <= y+1 && currRow < rows; currRow++) {
-											if(currCol >= 0 && currRow >= 0) {
-												if(!board[currCol][currRow].isRevealed() && !board[currCol][currRow].isFlagged()) {
-													changedTiles.add(board[currCol][currRow]);
-													board[currCol][currRow].reveal();
-												}
-											}
-										}
-									}
-									break;
-								}
-								sp.getChildren().add(number);
-								openedTiles++;
-							}
-						}
-						if(openedTiles == tilesToWin) {
-							System.out.println("won");
-							openedTiles = 0;
-							grid.setMouseTransparent(true);
-						}
-						if(lost) {
-							for(int c = 0; c < cols; c++) {
-								for(int r = 0; r < rows; r++) {
-									if((board[c][r].getMine() && board[c][r] != losingTile) &&
-										!board[c][r].isFlagged()) {
-										StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
-										Polygon poly = new Polygon();
-										poly.getPoints()
-												.addAll(new Double[] { tileWidth * 2 / 12.0, tileHeight * 2 / 12.0,
-														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 10 / 12.0,
-														tileHeight * 2 / 12.0, tileWidth * 1 / 2.0, tileHeight * 1 / 2.0,
-														tileWidth * 10 / 12.0, tileHeight * 10 / 12.0, tileWidth * 1 / 2.0,
-														tileHeight * 1 / 2.0, tileWidth * 2 / 12.0, tileHeight * 10 / 12.0,
-														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 20.0,
-														tileHeight * 1 / 2.0, tileWidth * 19 / 20.0, tileHeight * 1 / 2.0,
-														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0, tileWidth * 1 / 2.0,
-														tileHeight * 1 / 30.0, tileWidth * 1 / 2.0, tileHeight * 29 / 30.0,
-														tileWidth * 1 / 2.0, tileHeight * 1 / 2.0 });
-										poly.setFill(Color.BLACK);
-										poly.setStroke(Color.BLACK);
-										Shape sh = new Circle(tileHeight * 0.4);
-										sh.setFill(Color.BLACK);
-										sh.setStroke(Color.BLACK);
-										sp.getChildren().add(poly);
-										sp.getChildren().add(sh);
-									}
-								}
-							}
-							Image lostImage = new Image(getClass().getResourceAsStream("Spheal3.png"));
-							resetView.setImage(lostImage);
-							tl.stop();
-							tim.resetTime();
-						}
-					}
-				});
+				Main.createPane(grid, c, r, tl, mineCount, tileWidth, tileHeight, resetView, tim);
 			}
 		}
-
+		newButton.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+					Toggle tog = group.getSelectedToggle();
+					ObservableMap<Object, Object> prop = tog.getProperties();
+					int col = (int) prop.get("gridpane-row");
+					if(col == 1) {
+						cols = 9;
+						rows = 9;
+						mines = 10;
+					}
+					else if(col == 2) {
+						cols = 16;
+						rows = 16;
+						mines = 40;
+					}
+					else {
+						cols = 30;
+						rows = 16;
+						mines = 99;
+					}
+					resetBoard();
+					grid.getChildren().clear();
+					for(int c = 0; c < cols; c++) {
+						for(int r = 0; r < rows; r++) {
+							Main.createPane(grid, c, r, tl, mineCount, tileWidth, tileHeight, resetView, tim);
+						}
+					}
+					hb.setSpacing(cols*20);
+					Stage stage = (Stage)((Node) event.getSource()).getScene().getWindow();
+					stage.close();
+			}
+		});
 		vb.getChildren().add(grid);
 		Scene scene = new Scene(vb, 1600, 800);
 		primaryStage.setScene(scene);
