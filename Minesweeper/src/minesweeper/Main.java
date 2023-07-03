@@ -14,13 +14,16 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
@@ -104,21 +107,22 @@ public class Main extends Application{
 		}
 		losingTile = null;
 		mineDisplay = mines;
-		System.out.println("------------------------------");
-		for(int i = 0; i < rows; i++) {
-			System.out.print("|");
-			for(int j = 0; j < cols; j++) {
-				if(board[j][i].getMine() == true) {
-					System.out.print("m");
-				}
-				else {
-					System.out.print(board[j][i].getAdjMines());
-				}
-				System.out.print("|");
-			}
-			System.out.println();
-			System.out.println("------------------------------");
-		}
+//		System.out.println("------------------------------");
+//		for(int i = 0; i < rows; i++) {
+//			System.out.print("|");
+//			for(int j = 0; j < cols; j++) {
+//				if(board[j][i].getMine() == true) {
+//					System.out.print("m");
+//				}
+//				else {
+//					System.out.print(board[j][i].getAdjMines());
+//				}
+//				System.out.print("|");
+//			}
+//			System.out.println();
+//			System.out.println("------------------------------");
+		System.out.println("" + tilesToWin);
+//		}
 	}
 	
 	public static void createPane(GridPane grid, int c, int r, Timeline tl, Text mineCount, int tileWidth, int tileHeight, ImageView resetView, Time tim) {
@@ -310,12 +314,16 @@ public class Main extends Application{
 						}
 						sp.getChildren().add(number);
 						openedTiles++;
+						System.out.println(""+openedTiles);
 					}
 				}
 				if(openedTiles == tilesToWin) {
-					System.out.println("won");
+					Image wonImage = new Image(getClass().getResourceAsStream("Spheal4.png"));
+					resetView.setImage(wonImage);
 					openedTiles = 0;
 					grid.setMouseTransparent(true);
+					tl.stop();
+					tim.resetTime();
 				}
 				if(lost) {
 					for(int c = 0; c < cols; c++) {
@@ -367,6 +375,7 @@ public class Main extends Application{
 		Text musicMenu = new Text("Music");
 		GridPane diffPane = new GridPane();
 		diffPane.setHgap(50);
+		diffPane.setVgap(25);
 		diffPane.add(new Text(), 0, 0);
 		diffPane.add(new Text("Height"), 1, 0);
 		diffPane.add(new Text("Width"), 2, 0);
@@ -379,6 +388,8 @@ public class Main extends Application{
 	    intButton.setToggleGroup(group);
 	    RadioButton expButton = new RadioButton("Expert");
 	    expButton.setToggleGroup(group);
+	    RadioButton custButton = new RadioButton("Custom");
+	    custButton.setToggleGroup(group);
 		Text beg1 = new Text("9");
 		Text beg2 = new Text("9");
 		Text beg3 = new Text("10");
@@ -400,16 +411,43 @@ public class Main extends Application{
 		diffPane.add(exp1, 1, 3);
 		diffPane.add(exp2, 2, 3);
 		diffPane.add(exp3, 3, 3);
+		TextField cus1 = new TextField();
+		TextField cus2 = new TextField();
+		TextField cus3 = new TextField();
+		diffPane.add(custButton, 0, 4);
+		diffPane.add(cus1, 1, 4);
+		diffPane.add(cus2, 2, 4);
+		diffPane.add(cus3, 3, 4);
 		Button newButton = new Button("New Game");
-		diffPane.add(newButton, 0, 4);
+		diffPane.add(newButton, 0, 5);
 		difficulty.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
 				Stage diffStage = new Stage();
 				HBox gridBox = new HBox();
 				gridBox.getChildren().add(diffPane);
-				Scene diffScene = new Scene(gridBox, 500, 500);
+				Scene diffScene = new Scene(gridBox, 900, 400);
 				diffStage.setScene(diffScene);
 				diffStage.show();
+			}
+		});
+		VBox ctrl = new VBox();
+		Text ctrl1 = new Text("Controls");
+		Text ctrl2 = new Text();
+		ctrl2.setText("* Left-click an empty square to reveal it. \n"
+				+ "* Right-click an empty sqaure to flag it. \n"
+				+ "* Right-click a number to reveal its adjacent squares. \n"
+				+ "* Press the Spheal to start a new game.");
+		ctrl.getChildren().add(ctrl1);
+		ctrl.getChildren().add(ctrl2);
+		controls.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				Stage ctrlStage = new Stage();
+				HBox ctrlBox = new HBox();
+				ctrlBox.getChildren().add(ctrl);
+				Scene ctrlScene = new Scene(ctrlBox, 500, 500);
+				ctrlStage.setScene(ctrlScene);
+				ctrlStage.show();
 			}
 		});
 		controlBox.getChildren().addAll(difficulty, controls, musicMenu);
@@ -495,34 +533,65 @@ public class Main extends Application{
 		newButton.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-					Toggle tog = group.getSelectedToggle();
-					ObservableMap<Object, Object> prop = tog.getProperties();
-					int col = (int) prop.get("gridpane-row");
-					if(col == 1) {
-						cols = 9;
-						rows = 9;
-						mines = 10;
-					}
-					else if(col == 2) {
-						cols = 16;
-						rows = 16;
-						mines = 40;
-					}
-					else {
-						cols = 30;
-						rows = 16;
-						mines = 99;
-					}
-					resetBoard();
-					grid.getChildren().clear();
-					for(int c = 0; c < cols; c++) {
-						for(int r = 0; r < rows; r++) {
-							Main.createPane(grid, c, r, tl, mineCount, tileWidth, tileHeight, resetView, tim);
+					try {
+						Toggle tog = group.getSelectedToggle();
+						ObservableMap<Object, Object> prop = tog.getProperties();
+						int row = (int) prop.get("gridpane-row");
+						if(row == 1) {
+							cols = 9;
+							rows = 9;
+							mines = 10;
 						}
+						else if(row == 2) {
+							cols = 16;
+							rows = 16;
+							mines = 40;
+						}
+						else if(row == 3){
+							cols = 30;
+							rows = 16;
+							mines = 99;
+						}
+						else {
+							cols = Integer.parseInt(cus2.getText());
+							rows = Integer.parseInt(cus1.getText());
+							mines = Integer.parseInt(cus3.getText());
+							if(cols < 8 || rows < 2) {
+								throw new NullPointerException();
+							}
+							if(mines >= cols*rows) {
+								throw new ArithmeticException();
+							}
+						}
+						resetBoard();
+						grid.getChildren().clear();
+						mineCount.setText("" + mines);
+						tl.stop();
+						tim.resetTime();
+						clock.setText("0");
+						for(int c = 0; c < cols; c++) {
+							for(int r = 0; r < rows; r++) {
+								Main.createPane(grid, c, r, tl, mineCount, tileWidth, tileHeight, resetView, tim);
+							}
+						}
+						hb.setSpacing(cols*20);
+						Stage stage = (Stage)((Node) event.getSource()).getScene().getWindow();
+						stage.close();
+					} catch (NumberFormatException e) {
+						Alert alert = new Alert(AlertType.ERROR, 
+								"Enter a valid number");
+						alert.showAndWait();
 					}
-					hb.setSpacing(cols*20);
-					Stage stage = (Stage)((Node) event.getSource()).getScene().getWindow();
-					stage.close();
+					catch (NullPointerException e) {
+						Alert alert = new Alert(AlertType.ERROR, 
+								"Width must be at least 8 and rows must be at least 2");
+						alert.showAndWait();
+					}
+					catch (ArithmeticException e) {
+						Alert alert = new Alert(AlertType.ERROR, 
+								"Too many mines");
+						alert.showAndWait();
+					}
 			}
 		});
 		vb.getChildren().add(grid);
