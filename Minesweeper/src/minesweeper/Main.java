@@ -39,6 +39,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
@@ -371,8 +373,44 @@ public class Main extends Application{
 		HBox controlBox = new HBox();
 		controlBox.setSpacing(50);
 		Text difficulty = new Text("Game");
+		difficulty.setOnMouseMoved(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				difficulty.setFill(Color.BLUE);
+			}
+		});
+		difficulty.setOnMouseExited(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				difficulty.setFill(Color.BLACK);
+			}
+		});
 		Text controls = new Text("Controls");
+		controls.setOnMouseMoved(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				controls.setFill(Color.BLUE);
+			}
+		});
+		controls.setOnMouseExited(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				controls.setFill(Color.BLACK);
+			}
+		});
 		Text musicMenu = new Text("Music");
+		musicMenu.setOnMouseMoved(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				musicMenu.setFill(Color.BLUE);
+			}
+		});
+		musicMenu.setOnMouseExited(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				musicMenu.setFill(Color.BLACK);
+			}
+		});
 		GridPane diffPane = new GridPane();
 		diffPane.setHgap(50);
 		diffPane.setVgap(25);
@@ -483,34 +521,6 @@ public class Main extends Application{
 		resetPane.getChildren().add(resetView);
 		Text clock = new Text();
 		clock.setText("0");
-		resetPane.setOnMousePressed(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent event) {
-				Image pressedImg = new Image(getClass().getResourceAsStream("Spheal2.png"));
-				resetView.setImage(pressedImg);
-			}
-			
-		});
-		resetPane.setOnMouseReleased(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent event) {
-				resetBoard();
-				grid.setMouseTransparent(false);
-				firstClick = true;
-				lost = false;
-				losingTile = null;
-				mineDisplay = mines;
-				mineCount.setText("" + mineDisplay);
-				clock.setText("0");
-				for(int c = 0; c < cols; c++) {
-					for(int r = 0; r < rows; r++) {
-						StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
-						sp.getChildren().clear();
-					}
-				}
-				resetView.setImage(resetImg);
-			}
-		});
 		hb.getChildren().add(resetPane);
 		StackPane clockPane = new StackPane();
 		clockPane.getStyleClass().add("clock");
@@ -530,6 +540,36 @@ public class Main extends Application{
 				Main.createPane(grid, c, r, tl, mineCount, tileWidth, tileHeight, resetView, tim);
 			}
 		}
+		resetPane.setOnMousePressed(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				Image pressedImg = new Image(getClass().getResourceAsStream("Spheal2.png"));
+				resetView.setImage(pressedImg);
+			}
+			
+		});
+		resetPane.setOnMouseReleased(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				resetBoard();
+				grid.setMouseTransparent(false);
+				firstClick = true;
+				lost = false;
+				losingTile = null;
+				mineDisplay = mines;
+				mineCount.setText("" + mineDisplay);
+				tl.stop();
+				tim.resetTime();
+				clock.setText("0");
+				for(int c = 0; c < cols; c++) {
+					for(int r = 0; r < rows; r++) {
+						StackPane sp = (StackPane) grid.getChildren().get(c*rows + r);
+						sp.getChildren().clear();
+					}
+				}
+				resetView.setImage(resetImg);
+			}
+		});
 		newButton.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
@@ -595,6 +635,19 @@ public class Main extends Application{
 			}
 		});
 		vb.getChildren().add(grid);
+		Media music = new Media("file:///" + System.getProperty("user.dir").replace('\\', '/') + "/src/minesweeper/" + "S1.mp4");
+		MediaPlayer musicPlayer = new MediaPlayer(music);
+		musicPlayer.play();
+		musicPlayer.setOnEndOfMedia(new Runnable() {
+			@Override
+			public void run() {
+					musicPlayer.seek(Duration.ZERO);
+					musicPlayer.play();
+			}
+		});
+		primaryStage.setOnCloseRequest(windowEvent -> {
+			musicPlayer.stop();
+		});
 		Scene scene = new Scene(vb, 1600, 800);
 		primaryStage.setScene(scene);
 		primaryStage.show();
