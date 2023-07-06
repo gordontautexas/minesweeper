@@ -63,6 +63,7 @@ public class Main extends Application{
 	static boolean clockOn;
 	static boolean firstClick;
 	static Tile losingTile;
+	static MediaPlayer musicPlayer;
 	public static void main(String[] args) {
 		resetBoard();
 		firstClick = true;
@@ -488,6 +489,81 @@ public class Main extends Application{
 				ctrlStage.show();
 			}
 		});
+		Media music = new Media("file:///" + System.getProperty("user.dir").replace('\\', '/') + "/src/minesweeper/" + "S1.mp4");
+		musicPlayer = new MediaPlayer(music);
+		musicPlayer.play();
+		musicPlayer.setOnEndOfMedia(new Runnable() {
+			@Override
+			public void run() {
+					musicPlayer.seek(Duration.ZERO);
+					musicPlayer.play();
+			}
+		});
+		GridPane musicPane = new GridPane();
+		musicPane.setVgap(20);
+		musicPane.setHgap(20);
+		ToggleGroup songToggle = new ToggleGroup();
+		RadioButton song1 = new RadioButton();
+		song1.setToggleGroup(songToggle);
+		song1.setSelected(true);
+		RadioButton song2 = new RadioButton();
+		song2.setToggleGroup(songToggle);
+		RadioButton song3 = new RadioButton();
+		song3.setToggleGroup(songToggle);
+		Text mus1 = new Text("I Believe");
+		Text mus2 = new Text("Rivers in the Desert");
+		Text mus3 = new Text("Affection");
+		musicPane.add(song1, 0, 0);
+		musicPane.add(mus1, 1, 0);
+		musicPane.add(song2, 0, 1);
+		musicPane.add(mus2, 1, 1);
+		musicPane.add(song3, 0, 2);
+		musicPane.add(mus3, 1, 2);
+		Button changeBtn = new Button("OK");
+		musicPane.add(changeBtn, 0, 3);
+		changeBtn.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				Toggle tog = songToggle.getSelectedToggle();
+				ObservableMap<Object, Object> prop = tog.getProperties();
+				int row = (int) prop.get("gridpane-row");
+				musicPlayer.stop();
+				if(row == 0) {
+					Media music = new Media("file:///" + System.getProperty("user.dir").replace('\\', '/') + "/src/minesweeper/" + "S1.mp4");
+					musicPlayer = new MediaPlayer(music);
+				}
+				else if(row == 1) {
+					Media music = new Media("file:///" + System.getProperty("user.dir").replace('\\', '/') + "/src/minesweeper/" + "S2.mp4");
+					musicPlayer = new MediaPlayer(music);
+				}
+				else {
+					Media music = new Media("file:///" + System.getProperty("user.dir").replace('\\', '/') + "/src/minesweeper/" + "S3.mp4");
+					musicPlayer = new MediaPlayer(music);
+				}
+				musicPlayer.seek(Duration.ZERO);
+				musicPlayer.play();
+				musicPlayer.setOnEndOfMedia(new Runnable() {
+					@Override
+					public void run() {
+							musicPlayer.seek(Duration.ZERO);
+							musicPlayer.play();
+					}
+				});
+				Stage stage = (Stage)((Node) event.getSource()).getScene().getWindow();
+				stage.close();
+			}
+		});
+		musicMenu.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+					Stage musStage = new Stage();
+					HBox musBox = new HBox();
+					musBox.getChildren().add(musicPane);
+					Scene musScene = new Scene(musBox, 200, 200);
+					musStage.setScene(musScene);
+					musStage.show();
+			}
+		});
 		controlBox.getChildren().addAll(difficulty, controls, musicMenu);
 		vb.getChildren().add(controlBox);
 		HBox hb = new HBox();
@@ -635,16 +711,6 @@ public class Main extends Application{
 			}
 		});
 		vb.getChildren().add(grid);
-		Media music = new Media("file:///" + System.getProperty("user.dir").replace('\\', '/') + "/src/minesweeper/" + "S1.mp4");
-		MediaPlayer musicPlayer = new MediaPlayer(music);
-		musicPlayer.play();
-		musicPlayer.setOnEndOfMedia(new Runnable() {
-			@Override
-			public void run() {
-					musicPlayer.seek(Duration.ZERO);
-					musicPlayer.play();
-			}
-		});
 		primaryStage.setOnCloseRequest(windowEvent -> {
 			musicPlayer.stop();
 		});
